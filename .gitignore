@@ -1,0 +1,16 @@
+﻿node_modules/
+.next/
+out/
+build/
+.vercel
+.env
+.env.local
+.env*.local
+!.env.example
+*.log
+npm-debug.log*
+logs/
+.DS_Store
+Thumbs.db
+*.txt
+springboot-backend/target/
