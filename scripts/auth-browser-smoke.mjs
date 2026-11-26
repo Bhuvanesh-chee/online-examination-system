@@ -16,7 +16,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 
   // Simulates a browser rejecting third-party Set-Cookie headers in an iframe.
-  await context.route(/\/api\/auth\/(login|quick-login|register)$/, async (route) => {
+  await context.route(/\/api\/auth\/(login|register)$/, async (route) => {
     const response = await route.fetch();
     const responseHeaders = response.headers();
     delete responseHeaders["set-cookie"];
@@ -27,8 +27,9 @@ try {
   page.on("pageerror", (error) => console.error("Browser page error:", error.message));
 
   await page.goto(`${baseUrl}/login`, { waitUntil: "domcontentloaded", timeout: 30_000 });
-  await page.getByRole("button", { name: /Lecturer demo credentials/i }).click();
-  await page.getByRole("button", { name: "Sign In as Student" }).click();
+  await page.locator('input[type="email"]').fill("gagireddyramreddy@gmail.com");
+  await page.locator('input[type="password"]').fill("123456");
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL(/\/student\/dashboard$/, { timeout: 30_000 });
   await page.getByRole("heading", { name: /Welcome, GAGIREDDY RAMREDDY/i }).waitFor();
   console.log("PASS: Student logged in with credentials");
@@ -75,9 +76,13 @@ try {
   await page.getByRole("heading", { name: "Student Login Required" }).waitFor();
   console.log("PASS: Logout clears browser auth and protected pages are gated");
 
-  await page.getByRole("button", { name: /One-Click Demo Student Login/ }).click();
+  await page.goto(`${baseUrl}/login`, { waitUntil: "domcontentloaded" });
+  await page.locator('input[type="email"]').fill("gagireddyramreddy@gmail.com");
+  await page.locator('input[type="password"]').fill("123456");
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
+  await page.waitForURL(/\/student\/dashboard$/, { timeout: 30_000 });
   await page.getByRole("heading", { name: /Welcome, GAGIREDDY RAMREDDY/i }).waitFor();
-  console.log("PASS: One-click login recovers from the login-required screen");
+  console.log("PASS: Credential login recovers from the login-required screen");
 
   await context.close();
 
@@ -90,10 +95,10 @@ try {
   });
   const adminPage = await adminContext.newPage();
   await adminPage.goto(`${baseUrl}/login`, { waitUntil: "domcontentloaded" });
-  await adminPage.getByRole("button", { name: "Administrator" }).click();
-  await adminPage.getByPlaceholder("admin@exam.edu").fill("admin@exam.edu");
+  await adminPage.getByRole("button", { name: "Admin", exact: true }).click();
+  await adminPage.locator('input[type="email"]').fill("admin@exam.edu");
   await adminPage.locator('input[type="password"]').fill("admin123");
-  await adminPage.getByRole("button", { name: "Sign In as Admin" }).click();
+  await adminPage.getByRole("button", { name: "Sign In", exact: true }).click();
   await adminPage.waitForURL(/\/admin\/dashboard$/, { timeout: 30_000 });
   await adminPage.getByRole("heading", { name: "Administrative Dashboard" }).waitFor();
   await adminContext.clearCookies();

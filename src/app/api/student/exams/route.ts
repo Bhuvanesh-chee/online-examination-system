@@ -7,8 +7,8 @@ import { eq, sql, desc } from "drizzle-orm";
 export async function GET() {
   try {
     const user = await getSessionUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user || user.role !== "student") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const allExams = await db

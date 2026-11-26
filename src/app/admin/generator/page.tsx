@@ -251,7 +251,7 @@ export default function QuestionStudioPage() {
         <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-blue-200">
-              <Sparkles className="h-3.5 w-3.5" /> ExamSphere innovation lab
+              <Sparkles className="h-3.5 w-3.5" /> KL University innovation lab
             </span>
             <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">AI Question Studio</h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">

@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { setSessionCookie, issueAccessToken } from "@/lib/auth";
 import { databaseIssueResponse, getDatabaseIssue } from "@/lib/database-status";
+import { originGuard } from "@/lib/origin-guard";
 
 export const dynamic = "force-dynamic";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const STUDENT_EMAIL_PATTERN = /^\d{10}@kluniversity\.in$/i;
 
 export async function POST(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   const configurationIssue = getDatabaseIssue();
   if (configurationIssue) return databaseIssueResponse(configurationIssue);
 
@@ -38,11 +41,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!EMAIL_PATTERN.test(rawEmail)) {
+    if (!STUDENT_EMAIL_PATTERN.test(rawEmail)) {
       return NextResponse.json(
         {
-          error: "That email address doesn't look valid. Please check for typos (e.g. name@gmail.com).",
-          code: "INVALID_EMAIL",
+          error: "Please register using your official KL University student email ID (example: 2500030116@kluniversity.in).",
+          code: "INVALID_STUDENT_EMAIL",
         },
         { status: 400 }
       );
@@ -77,21 +80,18 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, await bcrypt.genSalt(10));
 
-    let newUser;
     try {
-      [newUser] = await db
-        .insert(users)
-        .values({
-          name,
-          email: rawEmail,
-          password: hashedPassword,
-          role: "student",
-          studentId: studentId || `STU-${Date.now().toString().slice(-6)}`,
-          department: department || "Computer Science and Engineering",
-          phone: phone || null,
-          isActive: true,
-        })
-        .returning();
+      await db.insert(users).values({
+        name,
+        email: rawEmail,
+        password: hashedPassword,
+        role: "student",
+        studentId: studentId || `STU-${Date.now().toString().slice(-6)}`,
+        department: department || "Computer Science and Engineering",
+        phone: phone || null,
+        isActive: true,
+        approvalStatus: "pending",
+      });
     } catch (dbError) {
       const message = dbError instanceof Error ? dbError.message : "";
       if (/duplicate|unique/i.test(message)) {
@@ -106,23 +106,15 @@ export async function POST(request: Request) {
       throw dbError;
     }
 
-    await setSessionCookie(newUser.id);
-
+    // A newly registered student never receives a session or access token.
+    // They must be approved by an administrator before they can sign in.
     return NextResponse.json(
       {
         success: true,
-        accessToken: issueAccessToken(newUser.id),
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          studentId: newUser.studentId,
-          department: newUser.department,
-          avatarUrl: newUser.avatarUrl,
-        },
+        pending: true,
+        message: "Registration received. An administrator must approve your account before you can sign in.",
       },
-      { headers: { "Cache-Control": "no-store" } }
+      { status: 202, headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
     console.error("Register API error:", error);

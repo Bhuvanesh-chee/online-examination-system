@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { db } from "@/db";
 import { questionBanks, questions, examinations, examQuestions } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
+import { originGuard } from "@/lib/origin-guard";
 import { and, eq, sql } from "drizzle-orm";
 import {
   DIFFICULTIES,
@@ -65,6 +66,9 @@ function validateQuestion(value: unknown): GeneratedQuestion | null {
 }
 
 export async function POST(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   const admin = await getSessionUser();
   if (!admin || admin.role !== "admin") {
     return NextResponse.json({ error: "Administrator access required" }, { status: 403 });

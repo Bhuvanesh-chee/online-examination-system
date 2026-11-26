@@ -3,6 +3,8 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/db";
 import { examinations, examQuestions, examAttempts, questions, studentAnswers } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { originGuard } from "@/lib/origin-guard";
+import { finalizeAttempt } from "@/lib/exam-session";
 
 // Fisher-Yates shuffle
 function shuffleArray<T>(array: T[], seed: number): T[] {
@@ -29,6 +31,9 @@ export async function POST(
   request: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const params = await props.params;
     const user = await getSessionUser();
@@ -92,19 +97,15 @@ export async function POST(
     const elapsedSeconds = Math.floor((now - startTime) / 1000);
     const timeRemainingSeconds = Math.max(0, exam.durationMinutes * 60 - elapsedSeconds);
 
-    // If time has already expired on an in_progress attempt, auto-close it
+    // If time has already expired on an in_progress attempt, grade and close it.
     if (timeRemainingSeconds <= 0) {
-      await db
-        .update(examAttempts)
-        .set({
-          status: "submitted",
-          endTime: new Date(),
-          timeSpentSeconds: exam.durationMinutes * 60,
-        })
-        .where(eq(examAttempts.id, currentAttempt.id));
+      await finalizeAttempt(currentAttempt.id, "expired");
 
       return NextResponse.json(
-        { error: "Time has already expired for this examination session." },
+        {
+          error: "Time has already expired for this examination session.",
+          code: "ATTEMPT_EXPIRED",
+        },
         { status: 410 }
       );
     }

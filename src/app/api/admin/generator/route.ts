@@ -9,6 +9,7 @@ import {
   type GeneratorDifficulty,
 } from "@/lib/question-generator";
 import { generateAIQuestions } from "@/lib/ai-question-service";
+import { originGuard } from "@/lib/origin-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    aiConfigured: Boolean(process.env.OPENAI_API_KEY),
+    aiConfigured: Boolean(process.env.GEMINI_API_KEY),
     subjects: SUBJECTS,
     difficulties: DIFFICULTIES,
     demoTopics: DEMO_TOPICS,
@@ -30,6 +31,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   const user = await getSessionUser();
   if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Administrator access required" }, { status: 403 });
@@ -66,12 +70,12 @@ export async function POST(request: Request) {
 
   const typedSubject = subject as GeneratorSubject;
   const typedDifficulty = difficulty as GeneratorDifficulty;
-  const aiConfigured = Boolean(process.env.OPENAI_API_KEY);
+  const aiConfigured = Boolean(process.env.GEMINI_API_KEY);
 
   if (mode === "ai" && !aiConfigured) {
     return NextResponse.json({
       code: "AI_NOT_CONFIGURED",
-      error: "Real AI generation requires OPENAI_API_KEY on the server. Choose Offline demo mode to generate curated sample questions without a key.",
+      error: "Real AI generation requires GEMINI_API_KEY on the server. Choose Offline demo mode to generate curated sample questions without a key.",
     }, { status: 503 });
   }
 

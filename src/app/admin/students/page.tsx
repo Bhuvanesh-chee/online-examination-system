@@ -24,6 +24,8 @@ interface StudentAccount {
   department: string | null;
   phone: string | null;
   isActive: boolean;
+  approvalStatus: "pending" | "approved" | "rejected";
+  approvedAt?: string | null;
   totalAttempts: number;
   averageScore: number;
   passedCount: number;
@@ -50,10 +52,6 @@ export default function AdminStudentsPage() {
   // Reset password form
   const [resetPwd, setResetPwd] = useState("");
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
   const fetchStudents = async () => {
     try {
       const res = await portalFetch("/api/admin/students");
@@ -67,6 +65,27 @@ export default function AdminStudentsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await portalFetch("/api/admin/students");
+        if (!active) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (active) setStudents(data.students || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleToggleStatus = async (studentId: number, currentStatus: boolean) => {
     try {
@@ -86,6 +105,24 @@ export default function AdminStudentsPage() {
       }
     } catch {
       alert("Failed to toggle status");
+    }
+  };
+
+  const handleApproval = async (studentId: number, action: "approve" | "reject") => {
+    try {
+      const res = await portalFetch("/api/admin/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, studentId }),
+      });
+      if (res.ok) {
+        fetchStudents();
+      } else {
+        const d = await res.json();
+        alert(d.error || `Failed to ${action} student`);
+      }
+    } catch {
+      alert(`Failed to ${action} student`);
     }
   };
 
@@ -165,11 +202,11 @@ export default function AdminStudentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" />
+            <Users className="w-6 h-6 text-[#A12D33]" />
             Student Account Directory
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Manage student registrations, academic IDs, and credential resets
+            Approve student registrations and manage academic IDs and credentials
           </p>
         </div>
 
@@ -237,25 +274,49 @@ export default function AdminStudentsPage() {
                     <td className="px-6 py-4">
                       <span className="font-bold text-slate-900">{s.averageScore} pts</span>
                     </td>
-                    <td className="px-6 py-4">
-                      {s.isActive ? (
+                    <td className="px-6 py-4 space-y-1">
+                      {s.approvalStatus === "pending" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                          Pending Approval
+                        </span>
+                      ) : s.approvalStatus === "rejected" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                          Rejected
+                        </span>
+                      ) : s.isActive ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                          <XCircle className="w-3.5 h-3.5 text-rose-600" /> Inactive
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                          <XCircle className="w-3.5 h-3.5 text-slate-500" /> Inactive
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {s.approvalStatus === "pending" && (
+                          <>
+                            <button
+                              onClick={() => handleApproval(s.id, "approve")}
+                              className="px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleApproval(s.id, "reject")}
+                              className="px-2.5 py-1 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => {
                             setTargetStudent(s);
                             setShowPasswordModal(true);
                           }}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition"
+                          className="p-1.5 text-slate-500 hover:text-[#A12D33] hover:bg-slate-100 rounded-lg transition"
                           title="Reset Password"
                         >
                           <KeyRound className="w-4 h-4" />

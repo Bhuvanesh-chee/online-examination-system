@@ -6,22 +6,54 @@ import crypto from "crypto";
 const SESSION_COOKIE_NAME = "oes_session_token";
 const COOKIE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const ACCESS_LIFETIME_MS = 12 * 60 * 60 * 1000;
+const DEV_FALLBACK_SECRET = "development-only-insecure-secret-change-me";
+let warnedAboutSecret = false;
 
-/** Set AUTH_SECRET in deployments. DATABASE_URL is a stable server-only fallback. */
+/** Production must configure AUTH_SECRET. Development gets a warning-only fallback. */
 function signingSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.DATABASE_URL || process.env.POSTGRES_URL;
-  if (!secret) throw new Error("AUTH_SECRET or a PostgreSQL URL is required for sessions");
-  return secret;
+  const secret = process.env.AUTH_SECRET;
+  if (secret && secret.length >= 32) return secret;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET must be set to at least 32 characters in production");
+  }
+
+  if (!warnedAboutSecret) {
+    warnedAboutSecret = true;
+    console.warn(
+      secret
+        ? "AUTH_SECRET is shorter than 32 characters; using it for development only."
+        : "AUTH_SECRET is not set; using an insecure development-only fallback."
+    );
+  }
+
+  return secret || DEV_FALLBACK_SECRET;
 }
+
+export type UserRole = "admin" | "student" | "teacher";
+
+export type ApprovalStatus = "pending" | "approved" | "rejected";
 
 export interface SessionUser {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "student";
+  role: UserRole;
   studentId: string | null;
   department: string | null;
   avatarUrl: string | null;
+  approvalStatus: ApprovalStatus;
+}
+
+/** Central authorization gate used by every protected API and page. */
+export function isAuthorizedUser(user: {
+  role: string;
+  isActive: boolean;
+  approvalStatus: string;
+}): boolean {
+  if (!user.isActive) return false;
+  if (user.role === "admin") return true;
+  return user.approvalStatus === "approved" && (user.role === "student" || user.role === "teacher");
 }
 
 type SessionPayload = {
@@ -103,21 +135,23 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         department: users.department,
         avatarUrl: users.avatarUrl,
         isActive: users.isActive,
+        approvalStatus: users.approvalStatus,
       })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user || !user.isActive || (user.role !== "admin" && user.role !== "student")) return null;
+    if (!user || !isAuthorizedUser(user)) return null;
 
     return {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
       studentId: user.studentId,
       department: user.department,
       avatarUrl: user.avatarUrl,
+      approvalStatus: user.approvalStatus as ApprovalStatus,
     };
   } catch (error) {
     console.error("getSessionUser error:", error);
@@ -125,23 +159,40 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 }
 
-export async function setSessionCookie(userId: number): Promise<void> {
-  const token = signToken(userId, "cookie", COOKIE_LIFETIME_MS);
-  const cookieStore = await cookies();
-  const isProduction = process.env.NODE_ENV === "production";
+/** Returns the session user only when their role is in the allowed list. */
+export async function requireRole(roles: UserRole[]): Promise<SessionUser | null> {
+  const user = await getSessionUser();
+  if (!user || !roles.includes(user.role)) return null;
+  return user;
+}
 
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
+function sessionCookieOptions() {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
     httpOnly: true,
     secure: isProduction,
     // Browsers with strict third-party-cookie blocking still need the
     // session-scoped bearer fallback provided on login.
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? ("none" as const) : ("lax" as const),
     path: "/",
+  };
+}
+
+export async function setSessionCookie(userId: number): Promise<void> {
+  const token = signToken(userId, "cookie", COOKIE_LIFETIME_MS);
+  const cookieStore = await cookies();
+
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
+    ...sessionCookieOptions(),
     maxAge: COOKIE_LIFETIME_MS / 1000,
   });
 }
 
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.set(SESSION_COOKIE_NAME, "", {
+    ...sessionCookieOptions(),
+    maxAge: 0,
+    expires: new Date(0),
+  });
 }

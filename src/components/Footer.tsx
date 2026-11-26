@@ -9,12 +9,12 @@ export default function Footer() {
           {/* Brand & Project Info */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+              <div className="w-10 h-10 rounded-xl bg-[#A12D33] flex items-center justify-center text-white shadow-lg shadow-[#A12D33]/30">
                 <GraduationCap className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xl font-bold text-white tracking-tight">ExamSphere</span>
-                <span className="text-xs block text-slate-400">Online Examination System</span>
+                <span className="text-xl font-bold text-white tracking-tight">KL UNIVERSITY</span>
+                <span className="text-xs block text-slate-400">Online Examination Portal</span>
               </div>
             </div>
             <p className="text-sm text-slate-400 max-w-md leading-relaxed">
@@ -100,7 +100,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <p>© 2026 Online Examination System (Project #2500030116). Developed by Gagireddy Ramreddy.</p>
+          <p>© 2026 KL University — Online Examination Portal. All rights reserved.</p>
           <div className="flex items-center gap-2 text-slate-400">
             <span>Built with Next.js App Router, Tailwind CSS & PostgreSQL</span>
           </div>

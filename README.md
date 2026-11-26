@@ -1,7 +1,7 @@
-# ExamSphere — Online Java & DSA Examination Portal
+# KL University — Secure Online Examination Portal
 
-**Project ID:** 2500030116 · **Student:** GAGIREDDY RAMREDDY  
-**Department:** B.Tech Computer Science and Engineering
+A single, administrator-approved portal for students, teachers and exam administrators,
+with timed Java & DSA examinations, saved answers, automatic marking, results, retakes and history.
 
 A working online exam system with login, a student dashboard, timed examinations, saved answers, automatic marking, results, retakes, and history. The browser preview runs the **Next.js + PostgreSQL** version; an equivalent **Spring Boot + MySQL** backend is included in `springboot-backend/` for Eclipse/IntelliJ demonstrations.
 
@@ -13,13 +13,21 @@ Open the latest **Preview** URL (`https://…e2b.app`) shown in the project inte
 
 Open `https://YOUR-WEBSITE-ADDRESS/api/health` on **the same hostname**. A working backend returns `{"ok":true,"database":"ready"}`. If it returns `DB_NOT_CONFIGURED`, that deployment was started without PostgreSQL credentials. Configure `DATABASE_URL` (or `POSTGRES_URL`) **in that deployment's server environment**, configure `AUTH_SECRET`, run `npx drizzle-kit push` and `npx tsx src/db/seed-portal.ts` on a fresh database, and redeploy. These settings cannot be fixed by changing the email in Chrome. Use the newest project Preview URL for a ready-to-use demonstration; an older or unrelated website address may use a different database or have no database at all.
 
-### Lecturer demo login
+### Roles, approval and demo accounts
 
-- **Email:** `GAGIREDDYRAMREDDY@gmail.com`
-- **Password:** `123456`
-- The login page has a **“Lecturer demo credentials — click to fill”** button.
-- The dashboard has Java and DSA exam cards, latest scores, and an explicit Logout button.
-- You may also register using your own personal email and password.
+Every account must be **approved by an administrator** before it can sign in. The login page
+is one shared form with Student, Teacher and Admin tabs. There is no one-click or demo login.
+
+| Role | Email | Password | Notes |
+| --- | --- | --- | --- |
+| Admin | `admin@exam.edu` | `admin123` | Created approved by the seed |
+| Student | `gagireddyramreddy@gmail.com` | `123456` | Created approved by the seed |
+| Teacher | `teacher@kluniversity.in` | `teacher123` | Approved and allocated to the demo student |
+
+- Self-registered students are created as **pending** and cannot sign in until approved.
+- Teachers are created by an administrator and start as **pending**.
+- Administrators can approve/reject accounts and allocate approved students to approved
+  teachers at `/admin/allocations`. Teachers only see their allocated students.
 
 ### Exams
 
@@ -51,13 +59,24 @@ Requirements: Node.js 20+ and PostgreSQL 14+.
 2. Create a PostgreSQL database and configure `.env`:
    ```env
    DATABASE_URL=postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/YOUR_DATABASE
-   AUTH_SECRET=REPLACE_WITH_A_RANDOM_32_BYTE_SECRET
+   AUTH_SECRET=REPLACE_WITH_AT_LEAST_32_CHARACTERS
+   APP_ORIGIN=http://localhost:3000
    ```
-   Generate the auth secret using `openssl rand -hex 32`. Never commit real credentials or the auth secret.
-3. `npx drizzle-kit push`
-4. **Load the two-paper demo data**: `npx tsx src/db/seed-portal.ts`  
-   This resets exam data, creates `JAVA-15` and `DSA-15`, and keeps registered student accounts. Do not rerun it if you need to preserve attempt history.
-5. `npm run dev` and open `http://localhost:3000`. For a production build: `npm run build && npm start`.
+   Generate the auth secret using `openssl rand -hex 32`. `AUTH_SECRET` is required in production
+   and must be at least 32 characters; development falls back to an insecure local secret with a
+   warning. Set `APP_ORIGIN` to the deployed site's exact origin (for example
+   `https://your-preview-url`). Use comma-separated `APP_ORIGINS` if the site is reachable from more
+   than one trusted origin. Never commit real credentials or the auth secret.
+3. **Back up the database**, then apply the additive schema change: `npx drizzle-kit push`
+   This adds `users.approval_status`, `users.approved_at`, `users.approved_by` and the
+   `teacher_allocations` table. Existing rows receive the `pending` default.
+4. **Approve pre-existing accounts once** (admin + students): `node scripts/backfill-approvals.mjs`
+   Without this, existing admins/students would be locked out by the new `pending` default.
+5. **Load the two-paper demo data**: `npx tsx src/db/seed-portal.ts`  
+   This resets exam data, creates `JAVA-15` and `DSA-15`, approves the demo admin/student,
+   creates an approved demo teacher and allocates the demo student to that teacher. Do not
+   rerun it if you need to preserve attempt history.
+6. `npm run dev` and open `http://localhost:3000`. For a production build: `npm run build && npm start`.
 
 **Important:** The older `src/db/execute-seed.ts` and `src/db/execute-seed-java.ts` are historical fixtures for the former multi-exam prototype; use `src/db/seed-portal.ts` for this two-exam demonstration.
 
@@ -78,17 +97,28 @@ See **`springboot-backend/README.md`** for full setup, six-table MySQL schema in
 ## Source layout
 
 ```text
-src/app/login, register          Authentication UI
-src/app/student/dashboard        Welcome, email, exam cards, recent scores
+src/app/login, register          Shared login + pending student registration
+src/app/student/dashboard        Welcome, assigned teachers, exam cards, recent scores
 src/app/student/exams            Java & DSA catalogue, instructions, live exam
+src/app/student/teachers         Teachers allocated to the signed-in student
 src/app/student/results          Scorecards, correct/incorrect review, retake
 src/app/student/history          Previous exam attempts
+src/app/teacher                  Teacher dashboard and allocated-student roster
 src/app/admin                    Question banks, exams, monitoring, reports
+src/app/admin/students           Student approval and account management
+src/app/admin/teachers           Teacher creation, approval and management
+src/app/admin/allocations        Teacher–student allocation management
 src/app/admin/generator          AI Question Studio preview/editor/draft builder
 src/app/api/admin/generator      Protected generation + persistent save endpoints
+src/app/api/admin/teachers       Admin teacher account API
+src/app/api/admin/allocations    Admin allocation API
+src/app/api/teacher/students     Teacher's allocated students (server-enforced)
+src/app/api/student/teachers     Student's allocated teachers (server-enforced)
 src/app/api                      Auth, student and admin REST APIs
 src/context/AuthContext.tsx      Client session context and login/logout
-src/lib/auth.ts                  HMAC-signed sessions and role lookup
+src/lib/auth.ts                  HMAC-signed sessions, approval gate and role lookup
+src/lib/rate-limit.ts            Login failure rate limiting
+src/lib/origin-guard.ts          Same-origin CSRF guard for mutating requests
 src/lib/question-generator.ts    Vetted offline Java/DSA/Frontend question catalogue
 src/lib/ai-question-service.ts   Optional OpenAI Responses API adapter
 src/lib/browser-session.ts       Per-tab cookie-blocked-preview fallback
@@ -97,8 +127,20 @@ src/db/seed-portal.ts           Current two-exam demo seed
 springboot-backend/             Java / Spring Boot / MySQL implementation
 database/                       MySQL schema and seed SQL
 scripts/auth-browser-smoke.mjs  Cookie-blocked navigation regression test
+scripts/backfill-approvals.mjs  One-time approval backfill after the schema change
 ```
 
 ## Authentication and security
 
-Passwords are BCrypt-hashed. The normal session is an HTTP-only, signed cookie. Because some embedded previews block third-party cookies, the login endpoint also returns a **12-hour signed access token** stored only in browser `sessionStorage` (or in memory if storage is unavailable). This fallback is sent only to same-origin `/api/` requests in an `Authorization` header, **never in a URL**. The server checks its signature and expiry, then loads the active user and role from PostgreSQL on every request. Logout clears the cookie and the tab-scoped fallback. An `AUTH_SECRET` set to a random value is recommended for production. Browser tab and fullscreen monitoring are deterrents, not guaranteed prevention of cheating.
+Passwords are BCrypt-hashed. Every protected request re-checks the user's role, active flag
+and `approval_status` on the server; the client UI is never the only gate. Mutating endpoints
+reject cross-origin requests using an explicit `APP_ORIGIN`/`APP_ORIGINS` allowlist, and repeated
+failed logins are rate limited. The normal session is an HTTP-only, signed cookie. Because some
+embedded previews block third-party cookies, the login endpoint also returns a **12-hour signed
+access token** stored only in browser `sessionStorage` (or in memory if storage is unavailable).
+This fallback is sent only to same-origin `/api/` requests in an `Authorization` header, **never
+in a URL**. The server checks its signature and expiry, then loads the active user and role from
+PostgreSQL on every request. Logout clears the cookie and the tab-scoped fallback. Access tokens
+are stateless, so a copied bearer token remains usable until its 12-hour expiry; changing a
+password does not revoke already-issued tokens. Browser tab and fullscreen monitoring are
+deterrents, not guaranteed prevention of cheating.

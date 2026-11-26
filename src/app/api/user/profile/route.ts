@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { originGuard } from "@/lib/origin-guard";
 
 export async function GET() {
   try {
@@ -36,6 +37,9 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const session = await getSessionUser();
     if (!session) {

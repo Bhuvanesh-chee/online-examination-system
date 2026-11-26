@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <title>KL University Official Logo & Vector Studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/1.16.0/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --fg: #0f172a;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --primary: #A12D33;
+      --primary-hover: #801c22;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #090d16;
+        --fg: #f8fafc;
+        --card-bg: #111827;
+        --border: #1f2937;
+        --primary: #c53840;
+        --primary-hover: #a12d33;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #090d16;
+      --fg: #f8fafc;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --primary: #c53840;
+      --primary-hover: #a12d33;
+      color-scheme: dark;
+    }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', sans-serif;
+    }
+    .brand-font {
+      font-family: 'Montserrat', sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-full">
+  <div id="root"></div>
+
+  <script>
+    const { useState, useRef } = React;
+
+    function App() {
+      const [copied, setCopied] = useState(false);
+      const [activeTab, setActiveTab] = useState('preview');
+      const [logoColor, setLogoColor] = useState('#A12D33');
+      const [showGrid, setShowGrid] = useState(false);
+      const [bgStyle, setBgStyle] = useState('white');
+      const svgRef = useRef(null);
+
+      // High-precision vector SVG of the KL University faceted logo
+      const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 350" width="100%" height="100%">
+  <defs>
+    <!-- Crimson gradient shades for faceted polygon effect -->
+    <linearGradient id="c1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b83a40"/>
+      <stop offset="100%" stop-color="#801c22"/>
+    </linearGradient>
+    <linearGradient id="c2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a12d33"/>
+      <stop offset="100%" stop-color="#64141a"/>
+    </linearGradient>
+    <linearGradient id="c3" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c94b52"/>
+      <stop offset="100%" stop-color="#801c22"/>
+    </linearGradient>
+    <linearGradient id="c4" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#731016"/>
+      <stop offset="100%" stop-color="#a12d33"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Optional Background for Export -->
+  ${bgStyle === 'dark' ? '<rect width="600" height="350" fill="#0b0f19"/>' : bgStyle === 'white' ? '<rect width="600" height="350" fill="#ffffff"/>' : ''}
+
+  <g transform="translate(50, 40)">
+    <!-- K Letterform -->
+    <g id="letter-k">
+      <!-- Left vertical stem -->
+      <polygon points="0,0 62,0 62,230 0,230" fill="url(#c1)"/>
+      <polygon points="25,25 62,0 62,115 25,115" fill="url(#c3)" opacity="0.85"/>
+      <polygon points="0,115 62,115 62,230 0,200" fill="url(#c2)" opacity="0.9"/>
+
+      <!-- Upper diagonal of K -->
+      <polygon points="62,115 145,0 210,0 120,115" fill="url(#c2)"/>
+      <polygon points="120,115 210,0 175,60 100,115" fill="url(#c3)" opacity="0.8"/>
+
+      <!-- Lower diagonal of K -->
+      <polygon points="62,115 125,115 205,230 145,230" fill="url(#c4)"/>
+      <polygon points="105,115 165,115 220,230 160,230" fill="url(#c1)" opacity="0.85"/>
+    </g>
+
+    <!-- L Letterform -->
+    <g id="letter-l" transform="translate(210, 0)">
+      <!-- Vertical stem of L -->
+      <polygon points="0,0 65,0 65,230 0,230" fill="url(#c1)"/>
+      <polygon points="0,0 65,0 40,115 0,115" fill="url(#c3)" opacity="0.8"/>
+      <polygon points="0,115 40,115 65,230 0,230" fill="url(#c2)" opacity="0.95"/>
+
+      <!-- Inner diagonal cut & top chamfer -->
+      <polygon points="65,0 190,0 190,45 65,45" fill="url(#c2)"/>
+      <polygon points="120,0 190,0 155,45 85,45" fill="url(#c3)" opacity="0.75"/>
+
+      <!-- Horizontal base of L -->
+      <polygon points="65,185 320,185 320,230 65,230" fill="url(#c4)"/>
+      <polygon points="65,185 180,185 160,230 65,230" fill="url(#c1)" opacity="0.85"/>
+      <polygon points="180,185 320,185 320,230 160,230" fill="url(#c2)" opacity="0.9"/>
+    </g>
+  </g>
+
+  <!-- UNIVERSITY Subtitle -->
+  <text x="300" y="305" font-family="'Montserrat', 'Helvetica Neue', Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="12" fill="#1e293b" text-anchor="middle">UNIVERSITY</text>
+</svg>`;
+
+      const handleCopyCode = () => {
+        navigator.clipboard.writeText(svgString);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+
+      const handleDownloadSvg = () => {
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'kl-university-official-logo.svg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      };
+
+      const handleDownloadPng = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 700;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          ctx.fillStyle = bgStyle === 'dark' ? '#0b0f19' : '#ffffff';
+          if (bgStyle === 'transparent') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          } else {
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const pngUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = pngUrl;
+          link.download = 'kl-university-official-logo.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      };
+
+      return React.createElement(
+        "div",
+        { className: "min-h-screen flex flex-col items-center p-4 sm:p-8" },
+        [
+          // Header
+          React.createElement("div", { key: "header", className: "max-w-4xl w-full text-center space-y-3 mb-8" }, [
+            React.createElement("div", { key: "tag", className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#A12D33]/10 text-[#A12D33] text-xs font-bold tracking-wide uppercase" }, [
+              React.createElement("span", { key: "dot", className: "w-2 h-2 rounded-full bg-[#A12D33]" }),
+              "Official Brand Asset Studio"
+            ]),
+            React.createElement("h1", { key: "h1", className: "text-3xl sm:text-4xl font-extrabold tracking-tight brand-font" }, "KL University Logo Studio"),
+            React.createElement("p", { key: "p", className: "text-sm text-slate-500 max-w-xl mx-auto" }, "High-fidelity vector logo featuring faceted crimson geometry and bold typography. Ready for web, print, and high-resolution export.")
+          ]),
+
+          // Main Studio Card
+          React.createElement("div", { key: "card", className: "max-w-4xl w-full bg-[var(--card-bg)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden" }, [
+            // Toolbar
+            React.createElement("div", { key: "toolbar", className: "flex flex-wrap items-center justify-between gap-4 p-4 border-b border-[var(--border)] bg-slate-50/50 dark:bg-slate-900/50" }, [
+              // Tabs
+              React.createElement("div", { key: "tabs", className: "flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold" }, [
+                React.createElement("button", {
+                  key: "tab-preview",
+                  onClick: () => setActiveTab("preview"),
+                  className: `px-4 py-2 rounded-lg transition ${activeTab === "preview" ? "bg-white dark:bg-slate-700 text-[#A12D33] dark:text-white shadow-sm" : "text-slate-600 dark:text-slate-400"}`
+                }, "Visual Preview"),
+                React.createElement("button", {
+                  key: "tab-code",
+                  onClick: () => setActiveTab("code"),
+                  className: `px-4 py-2 rounded-lg transition ${activeTab === "code" ? "bg-white dark:bg-slate-700 text-[#A12D33] dark:text-white shadow-sm" : "text-slate-600 dark:text-slate-400"}`
+                }, "SVG Code")
+              ]),
+
+              // Controls & Actions
+              React.createElement("div", { key: "actions", className: "flex flex-wrap items-center gap-2" }, [
+                // Background Selector
+                React.createElement("div", { key: "bg-sel", className: "flex items-center gap-1 text-xs bg-slate-200/70 dark:bg-slate-800 p-1 rounded-xl font-medium" }, [
+                  React.createElement("span", { key: "lbl", className: "px-2 text-slate-500" }, "Background:"),
+                  React.createElement("button", {
+                    key: "bg-w",
+                    onClick: () => setBgStyle("white"),
+                    className: `px-2.5 py-1 rounded-lg ${bgStyle === "white" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500"}`
+                  }, "White"),
+                  React.createElement("button", {
+                    key: "bg-d",
+                    onClick: () => setBgStyle("dark"),
+                    className: `px-2.5 py-1 rounded-lg ${bgStyle === "dark" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500"}`
+                  }, "Dark"),
+                  React.createElement("button", {
+                    key: "bg-t",
+                    onClick: () => setBgStyle("transparent"),
+                    className: `px-2.5 py-1 rounded-lg ${bgStyle === "transparent" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500"}`
+                  }, "Transparent")
+                ]),
+
+                // Download Buttons
+                React.createElement("button", {
+                  key: "dl-svg",
+                  onClick: handleDownloadSvg,
+                  className: "px-3.5 py-2 rounded-xl bg-[#A12D33] hover:bg-[#801c22] text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                }, "Download .SVG"),
+                React.createElement("button", {
+                  key: "dl-png",
+                  onClick: handleDownloadPng,
+                  className: "px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold shadow-md transition flex items-center gap-1.5"
+                }, "Export High-Res .PNG")
+              ])
+            ]),
+
+            // Body Area
+            React.createElement("div", { key: "content", className: "p-6 sm:p-12" }, [
+              activeTab === "preview" ? React.createElement("div", {
+                key: "preview-view",
+                className: `w-full rounded-2xl p-8 flex items-center justify-center min-h-[320px] sm:min-h-[400px] border border-slate-200 dark:border-slate-800 transition ${
+                  bgStyle === "dark" ? "bg-[#0b0f19]" : bgStyle === "white" ? "bg-white" : "bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]"
+                }`
+              }, [
+                React.createElement("div", {
+                  key: "svg-container",
+                  className: "w-full max-w-xl",
+                  dangerouslySetInnerHTML: { __html: svgString }
+                })
+              ]) : React.createElement("div", { key: "code-view", className: "space-y-4" }, [
+                React.createElement("div", { key: "code-header", className: "flex items-center justify-between" }, [
+                  React.createElement("span", { key: "title", className: "text-xs font-bold text-slate-500 uppercase tracking-wider" }, "Scalable Vector Graphics (SVG) Source Code"),
+                  React.createElement("button", {
+                    key: "copy-btn",
+                    onClick: handleCopyCode,
+                    className: "px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 transition"
+                  }, copied ? "Copied to Clipboard!" : "Copy Code")
+                ]),
+                React.createElement("pre", {
+                  key: "code-block",
+                  className: "w-full h-80 overflow-auto p-4 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs border border-slate-800 selection:bg-[#A12D33]"
+                }, svgString)
+              ])
+            ])
+          ]),
+
+          // Footer info
+          React.createElement("div", { key: "footer", className: "mt-8 text-center text-xs text-slate-400 space-y-1" }, [
+            React.createElement("p", { key: "f1" }, "Vector graphics generated with precise polygon facets and professional typography."),
+            React.createElement("p", { key: "f2" }, "Optimized for web applications, examinations portal, and official university documentation.")
+          ])
+        ]
+      );
+
+      return null;
+    }
+
+    ReactDOM.render(React.createElement(App), document.getElementById("root"));
+  </script>
+</body>
+</html>

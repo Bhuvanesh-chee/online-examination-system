@@ -19,7 +19,7 @@ export interface UserSession {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "student";
+  role: "admin" | "student" | "teacher";
   studentId: string | null;
   department: string | null;
   avatarUrl: string | null;
@@ -30,6 +30,7 @@ interface AuthResult {
   error?: string;
   code?: string;
   user?: UserSession;
+  pending?: boolean;
 }
 
 interface AuthContextType {
@@ -44,7 +45,6 @@ interface AuthContextType {
     department?: string;
     phone?: string;
   }) => Promise<AuthResult>;
-  quickLogin: (role: "admin" | "student") => Promise<AuthResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -56,6 +56,8 @@ type AuthResponse = {
   code?: string;
   user?: UserSession;
   accessToken?: string;
+  pending?: boolean;
+  message?: string;
 };
 
 async function readAuthResponse(response: Response): Promise<AuthResponse> {
@@ -169,23 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) {
         return { success: false, error: data.error ?? "Could not create your account.", code: data.code };
       }
-      return acceptLogin(data);
-    } catch (err) {
-      return { success: false, error: describeFailure(err) };
-    }
-  };
-
-  const quickLogin = async (role: "admin" | "student"): Promise<AuthResult> => {
-    try {
-      const res = await fetch("/api/auth/quick-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ role }),
-      });
-      const data = await readAuthResponse(res);
-      if (!res.ok) {
-        return { success: false, error: data.error ?? "Demo sign-in is unavailable." };
+      if (data.pending) {
+        return { success: true, pending: true };
       }
       return acceptLogin(data);
     } catch (err) {
@@ -206,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, quickLogin, logout, refreshUser: fetchSession }}
+      value={{ user, loading, login, register, logout, refreshUser: fetchSession }}
     >
       {children}
     </AuthContext.Provider>

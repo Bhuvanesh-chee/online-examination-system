@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/db";
 import { users, examinations, questions, examAttempts } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -16,6 +16,21 @@ export async function GET() {
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(eq(users.role, "student"));
+
+    const [teachersCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.role, "teacher"));
+
+    const [pendingStudentsCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(eq(users.role, "student"), eq(users.approvalStatus, "pending")));
+
+    const [pendingTeachersCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(eq(users.role, "teacher"), eq(users.approvalStatus, "pending")));
 
     const [examsCount] = await db
       .select({ count: sql<number>`count(*)` })
@@ -68,6 +83,9 @@ export async function GET() {
     return NextResponse.json({
       stats: {
         totalStudents: Number(studentsCount?.count || 0),
+        totalTeachers: Number(teachersCount?.count || 0),
+        pendingStudents: Number(pendingStudentsCount?.count || 0),
+        pendingTeachers: Number(pendingTeachersCount?.count || 0),
         totalExams: Number(examsCount?.count || 0),
         totalQuestions: Number(questionsCount?.count || 0),
         totalAttempts,

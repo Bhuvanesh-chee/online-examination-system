@@ -1,4 +1,15 @@
-import { pgTable, serial, text, integer, boolean, timestamp, real, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  real,
+  jsonb,
+  uniqueIndex,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -12,6 +23,11 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   phone: text("phone"),
   isActive: boolean("is_active").notNull().default(true),
+  approvalStatus: text("approval_status").notNull().default("pending"), // "pending" | "approved" | "rejected"
+  approvedAt: timestamp("approved_at"),
+  approvedBy: integer("approved_by").references((): AnyPgColumn => users.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -112,6 +128,27 @@ export const suspiciousLogs = pgTable("suspicious_logs", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
+export const teacherAllocations = pgTable(
+  "teacher_allocations",
+  {
+    id: serial("id").primaryKey(),
+    teacherId: integer("teacher_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    studentId: integer("student_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assignedBy: integer("assigned_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    teacherStudentUnique: uniqueIndex("teacher_allocations_teacher_student_unique").on(
+      table.teacherId,
+      table.studentId
+    ),
+  })
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   attempts: many(examAttempts),
@@ -178,6 +215,21 @@ export const suspiciousLogsRelations = relations(suspiciousLogs, ({ one }) => ({
   }),
   student: one(users, {
     fields: [suspiciousLogs.studentId],
+    references: [users.id],
+  }),
+}));
+
+export const teacherAllocationsRelations = relations(teacherAllocations, ({ one }) => ({
+  teacher: one(users, {
+    fields: [teacherAllocations.teacherId],
+    references: [users.id],
+  }),
+  student: one(users, {
+    fields: [teacherAllocations.studentId],
+    references: [users.id],
+  }),
+  assigner: one(users, {
+    fields: [teacherAllocations.assignedBy],
     references: [users.id],
   }),
 }));

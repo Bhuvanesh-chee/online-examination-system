@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/db";
-import { examAttempts, suspiciousLogs } from "@/db/schema";
+import { examAttempts, examinations, suspiciousLogs } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { originGuard } from "@/lib/origin-guard";
+import {
+  SUBMISSION_GRACE_MS,
+  attemptDeadline,
+  finalizeAttempt,
+} from "@/lib/exam-session";
 
 export async function POST(
   request: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const params = await props.params;
     const user = await getSessionUser();
@@ -28,6 +37,23 @@ export async function POST(
 
     if (!attempt || attempt.status !== "in_progress") {
       return NextResponse.json({ error: "Invalid attempt or already completed" }, { status: 400 });
+    }
+
+    const [exam] = await db
+      .select({ durationMinutes: examinations.durationMinutes })
+      .from(examinations)
+      .where(eq(examinations.id, attempt.examId))
+      .limit(1);
+
+    if (
+      exam &&
+      Date.now() > attemptDeadline(attempt.startTime, exam.durationMinutes) + SUBMISSION_GRACE_MS
+    ) {
+      await finalizeAttempt(attemptId, "expired");
+      return NextResponse.json(
+        { error: "Time has expired for this examination session.", code: "ATTEMPT_EXPIRED" },
+        { status: 409 }
+      );
     }
 
     const body = await request.json();

@@ -3,11 +3,15 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/db";
 import { questions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { originGuard } from "@/lib/origin-guard";
 
 export async function PUT(
   request: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const params = await props.params;
     const user = await getSessionUser();
@@ -62,6 +66,9 @@ export async function DELETE(
   request: Request,
   props: { params: Promise<{ id: string }> }
 ) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const params = await props.params;
     const user = await getSessionUser();

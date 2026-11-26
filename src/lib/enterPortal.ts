@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { portalFetch } from "@/lib/browser-session";
 
-export type PortalRole = "admin" | "student";
+export type PortalRole = "admin" | "student" | "teacher";
 
 export function portalPath(role: PortalRole): string {
-  return role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+  if (role === "admin") return "/admin/dashboard";
+  if (role === "teacher") return "/teacher/dashboard";
+  return "/student/dashboard";
 }
 
 /** Verify either the normal cookie or the tab-scoped fallback token. */

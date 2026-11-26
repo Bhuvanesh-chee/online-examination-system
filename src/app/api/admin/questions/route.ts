@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/db";
 import { questions, questionBanks } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { originGuard } from "@/lib/origin-guard";
 
 export async function GET(request: Request) {
   try {
@@ -55,6 +56,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   try {
     const user = await getSessionUser();
     if (!user || user.role !== "admin") {

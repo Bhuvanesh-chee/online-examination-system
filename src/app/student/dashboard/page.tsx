@@ -50,19 +50,28 @@ interface AttemptRow {
   startTime: string;
 }
 
+interface AssignedTeacher {
+  id: number;
+  name: string;
+  email: string;
+  department: string | null;
+}
+
 export default function StudentDashboardPage() {
   const { user, logout } = useAuth();
   const [exams, setExams] = useState<ExamCard[]>([]);
   const [attempts, setAttempts] = useState<AttemptRow[]>([]);
+  const [teachers, setTeachers] = useState<AssignedTeacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [examsRes, resultsRes] = await Promise.all([
+        const [examsRes, resultsRes, teachersRes] = await Promise.all([
           portalFetch("/api/student/exams", { cache: "no-store" }),
           portalFetch("/api/student/results", { cache: "no-store" }),
+          portalFetch("/api/student/teachers", { cache: "no-store" }),
         ]);
         if (examsRes.ok) {
           const data = await examsRes.json();
@@ -71,6 +80,10 @@ export default function StudentDashboardPage() {
         if (resultsRes.ok) {
           const data = await resultsRes.json();
           setAttempts(data.history ?? []);
+        }
+        if (teachersRes.ok) {
+          const data = await teachersRes.json();
+          setTeachers(data.teachers ?? []);
         }
       } catch {
         setError("Could not load your dashboard. Please refresh the page.");
@@ -108,7 +121,7 @@ export default function StudentDashboardPage() {
   return (
     <div className="space-y-7">
       {/* Welcome banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <div className="rounded-3xl bg-gradient-to-r from-[#A12D33] via-[#8f272c] to-[#7d1f24] text-white p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 w-52 h-52 rounded-full bg-white/10 blur-2xl" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-1.5">
@@ -118,7 +131,7 @@ export default function StudentDashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Welcome, {user?.name ?? "Student"}
             </h1>
-            <p className="text-blue-100 text-xs sm:text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="text-[#f3d6d8] text-xs sm:text-sm flex flex-wrap items-center gap-x-3 gap-y-1">
               <span className="inline-flex items-center gap-1.5">
                 <UserIcon className="w-3.5 h-3.5" /> {user?.email}
               </span>
@@ -131,7 +144,7 @@ export default function StudentDashboardPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <Link
               href="/student/exams"
-              className="px-4 py-2.5 rounded-xl bg-white text-blue-700 text-xs font-bold hover:bg-blue-50 transition shadow"
+              className="px-4 py-2.5 rounded-xl bg-white text-[#A12D33] text-xs font-bold hover:bg-slate-100 transition shadow"
             >
               All Examinations
             </Link>
@@ -216,6 +229,41 @@ export default function StudentDashboardPage() {
           </div>
           <div className="text-[11px] text-slate-500 mt-0.5">Across all attempts</div>
         </div>
+      </div>
+
+      {/* Assigned teachers */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <UserIcon className="w-4 h-4 text-[#A12D33]" /> My Teachers
+          </h2>
+          <Link
+            href="/student/teachers"
+            className="text-xs font-semibold text-[#A12D33] hover:underline"
+          >
+            View all
+          </Link>
+        </div>
+        {teachers.length === 0 ? (
+          <p className="text-xs text-slate-500">
+            No teacher has been allocated to you yet. Please contact the administrator.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {teachers.map((teacher) => (
+              <span
+                key={teacher.id}
+                className="inline-flex items-center gap-2 rounded-full border border-[#A12D33]/20 bg-[#A12D33]/5 px-3 py-1.5 text-xs text-slate-700"
+              >
+                <span className="w-6 h-6 rounded-full bg-[#A12D33] text-white flex items-center justify-center text-[10px] font-bold">
+                  {teacher.name.slice(0, 2).toUpperCase()}
+                </span>
+                <span className="font-semibold">{teacher.name}</span>
+                <span className="text-slate-400">{teacher.department || "Faculty"}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Exam cards */}

@@ -4,10 +4,21 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { setSessionCookie, issueAccessToken } from "@/lib/auth";
 import { databaseIssueResponse, getDatabaseIssue } from "@/lib/database-status";
+import { originGuard } from "@/lib/origin-guard";
+import { clearLoginFailures, loginRateLimit, recordLoginFailure } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
+function clientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  return request.headers.get("x-real-ip") || "unknown";
+}
+
 export async function POST(request: Request) {
+  const blocked = originGuard(request);
+  if (blocked) return blocked;
+
   const configurationIssue = getDatabaseIssue();
   if (configurationIssue) return databaseIssueResponse(configurationIssue);
 
@@ -33,17 +44,61 @@ export async function POST(request: Request) {
       );
     }
 
+    const rateKey = `${email}|${clientIp(request)}`;
+    const rate = loginRateLimit(rateKey);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many failed sign-in attempts. Please wait a few minutes and try again.",
+          code: "RATE_LIMITED",
+        },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+      );
+    }
+
     const { db } = await import("@/db");
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (!user) {
+      recordLoginFailure(rateKey);
       return NextResponse.json(
         {
-          error: "No account found with that email address. If you are new here, create a student account first.",
-          code: "NOT_FOUND",
+          error: "Invalid email address or password. Please try again.",
+          code: "INVALID_CREDENTIALS",
         },
         { status: 401 }
       );
+    }
+
+    if (!(await bcrypt.compare(password, user.password))) {
+      recordLoginFailure(rateKey);
+      return NextResponse.json(
+        { error: "Incorrect password. Please try again.", code: "BAD_PASSWORD" },
+        { status: 401 }
+      );
+    }
+
+    // Admin accounts bypass approval checks entirely.
+    if (user.role !== "admin") {
+      if (user.approvalStatus === "rejected") {
+        return NextResponse.json(
+          {
+            error: "Your account request was rejected. Please contact the administrator.",
+            code: "ACCOUNT_REJECTED",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (user.approvalStatus === "pending") {
+        return NextResponse.json(
+          {
+            error: "Your account is awaiting administrator approval. Please try again once you have been approved.",
+            code: "PENDING_APPROVAL",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     if (!user.isActive) {
@@ -59,20 +114,21 @@ export async function POST(request: Request) {
     if (role && user.role !== role) {
       return NextResponse.json(
         {
-          error: `This account is registered as a ${user.role}. Switch the role tab and try again.`,
+          error: `This account is registered as a ${user.role}.`,
           code: "ROLE_MISMATCH",
         },
         { status: 403 }
       );
     }
 
-    if (!(await bcrypt.compare(password, user.password))) {
+    if (user.role !== "admin" && user.role !== "student" && user.role !== "teacher") {
       return NextResponse.json(
-        { error: "Incorrect password. Please try again.", code: "BAD_PASSWORD" },
-        { status: 401 }
+        { error: "This account does not have a valid role. Please contact the administrator.", code: "INVALID_ROLE" },
+        { status: 403 }
       );
     }
 
+    clearLoginFailures(rateKey);
     await setSessionCookie(user.id);
     return NextResponse.json(
       {

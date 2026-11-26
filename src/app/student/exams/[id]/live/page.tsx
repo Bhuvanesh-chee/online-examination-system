@@ -166,12 +166,42 @@ export default function LiveExamPage({ params }: { params: Promise<{ id: string 
     return () => clearInterval(timer);
   }, [loading, timeRemaining]);
 
+  // Submit Examination
+  const handleFinalSubmit = useCallback(
+    async (isAuto: boolean = false) => {
+      if (!attemptId || submitting) return;
+      setSubmitting(true);
+
+      try {
+        const res = await portalFetch(`/api/student/attempts/${attemptId}/submit`, {
+          method: "POST",
+        });
+
+        if (res.ok) {
+          router.push(`/student/results?attemptId=${attemptId}`);
+        } else if (res.status === 409 || res.status === 410) {
+          router.push(`/student/results?attemptId=${attemptId}`);
+        } else {
+          const err = await res.json();
+          alert(err.error || "Submission failed. Please try again.");
+          setSubmitting(false);
+        }
+      } catch {
+        alert("Network error submitting exam. Please check connection and try again.");
+        setSubmitting(false);
+      }
+    },
+    [attemptId, submitting, router]
+  );
+
   // Auto-submit when timer expires
   useEffect(() => {
-    if (timerExpired && attemptId && !submitting) {
-      handleFinalSubmit(true);
-    }
-  }, [timerExpired, attemptId, submitting]);
+    if (!timerExpired || !attemptId || submitting) return;
+    const timer = setTimeout(() => {
+      void handleFinalSubmit(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [timerExpired, attemptId, submitting, handleFinalSubmit]);
 
   // 3. Save Answer to Server
   const saveAnswerToServer = useCallback(
@@ -195,12 +225,16 @@ export default function LiveExamPage({ params }: { params: Promise<{ id: string 
           setAutosaveStatus("saved");
         } else {
           setAutosaveStatus("error");
+          if (res.status === 409 || res.status === 410) {
+            router.push(`/student/results?attemptId=${attemptId}`);
+            return;
+          }
         }
       } catch {
         setAutosaveStatus("error");
       }
     },
-    [attemptId]
+    [attemptId, router]
   );
 
   // 4. Update Answer in local state & schedule debounced server save
@@ -301,29 +335,6 @@ export default function LiveExamPage({ params }: { params: Promise<{ id: string 
       document.documentElement.requestFullscreen().catch(() => {});
     } else {
       document.exitFullscreen().catch(() => {});
-    }
-  };
-
-  // 6. Submit Examination
-  const handleFinalSubmit = async (isAuto: boolean = false) => {
-    if (!attemptId || submitting) return;
-    setSubmitting(true);
-
-    try {
-      const res = await portalFetch(`/api/student/attempts/${attemptId}/submit`, {
-        method: "POST",
-      });
-
-      if (res.ok) {
-        router.push(`/student/results?attemptId=${attemptId}`);
-      } else {
-        const err = await res.json();
-        alert(err.error || "Submission failed. Please try again.");
-        setSubmitting(false);
-      }
-    } catch {
-      alert("Network error submitting exam. Please check connection and try again.");
-      setSubmitting(false);
     }
   };
 

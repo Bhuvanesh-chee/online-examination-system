@@ -14,7 +14,7 @@ export default function AboutPage() {
             <span className="px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-blue-200 uppercase tracking-widest border border-white/20">
               Project Documentation
             </span>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold">About ExamSphere</h1>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold">About the KL University Portal</h1>
             <p className="text-slate-300 max-w-2xl mx-auto text-base sm:text-lg">
               A state-of-the-art Web-Based Online Examination & Proctoring Management System.
             </p>

@@ -18,11 +18,10 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useEnterPortal, sessionIsLive, COOKIE_BLOCKED_MESSAGE } from "@/lib/enterPortal";
+import { portalPath } from "@/lib/enterPortal";
 
 export default function RegisterPage() {
   const { register, user, loading: authLoading } = useAuth();
-  const enterPortal = useEnterPortal();
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -80,7 +79,7 @@ export default function RegisterPage() {
   // A signed-in visitor has no reason to see the sign-up form.
   useEffect(() => {
     if (!authLoading && user && !loading && !error) {
-      router.replace(user.role === "admin" ? "/admin/dashboard" : "/student/dashboard");
+      router.replace(portalPath(user.role));
     }
   }, [user, authLoading, loading, error, router]);
 
@@ -89,6 +88,13 @@ export default function RegisterPage() {
     setError(null);
     setErrorCode(null);
     setLoading(true);
+
+    const studentEmailPattern = /^\d{10}@kluniversity\.in$/i;
+    if (!studentEmailPattern.test(email.trim())) {
+      setError("Please register using your official KL University student email ID (example: 2500030116@kluniversity.in).");
+      setLoading(false);
+      return;
+    }
 
     const result = await register({ name, email, password, studentId, department, phone });
 
@@ -99,18 +105,10 @@ export default function RegisterPage() {
       return;
     }
 
-    const live = await sessionIsLive();
-    if (!live) {
-      setError(COOKIE_BLOCKED_MESSAGE);
-      setErrorCode("COOKIE_BLOCKED");
-      setLoading(false);
-      return;
-    }
-
+    // Registration creates a pending account; sign-in is granted only after
+    // an administrator approves it.
     setDone(true);
-    // Hard navigation: guarantees the browser sends the freshly issued
-    // session cookie and the protected layout re-hydrates from the server.
-    enterPortal("student");
+    setLoading(false);
   };
 
   return (
@@ -121,12 +119,12 @@ export default function RegisterPage() {
         <div className="max-w-lg w-full">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 space-y-6">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white mx-auto shadow-md">
+              <div className="w-12 h-12 rounded-xl bg-[#A12D33] flex items-center justify-center text-white mx-auto shadow-md">
                 <GraduationCap className="w-6 h-6" />
               </div>
-              <h1 className="text-2xl font-extrabold text-slate-900">Create Student Account</h1>
+              <h1 className="text-2xl font-extrabold text-slate-900">Request Student Account</h1>
               <p className="text-xs text-slate-500">
-                New students can use a personal or college email address.
+                Submit your details — an administrator must approve the account before you can sign in.
               </p>
             </div>
 
@@ -180,9 +178,18 @@ export default function RegisterPage() {
             )}
 
             {done && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                Account created — opening your dashboard…
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold">Registration submitted.</span>
+                </div>
+                <p>
+                  Your account is pending administrator approval. You will be able to sign in
+                  once it has been approved.
+                </p>
+                <Link href="/login" className="inline-block font-semibold text-[#A12D33] underline">
+                  Go to sign in →
+                </Link>
               </div>
             )}
 
@@ -263,7 +270,7 @@ export default function RegisterPage() {
 
               <div>
                 <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
-                  Personal Email Address *
+                  Official KL University Student Email ID *
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -276,10 +283,13 @@ export default function RegisterPage() {
                     inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="yourname@gmail.com"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    placeholder="2500030116@kluniversity.in"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono transition"
                   />
                 </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Format: 10-digit roll number followed by @kluniversity.in (e.g. 2500030116@kluniversity.in)
+                </p>
               </div>
 
               <div>
@@ -311,16 +321,18 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading || done}
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#A12D33] hover:bg-[#7d1f24] disabled:bg-[#c98b8f] text-white font-semibold text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
               >
-                {loading || done ? (
+                {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{done ? "Opening dashboard..." : "Creating your account..."}</span>
+                    <span>Submitting your request...</span>
                   </>
+                ) : done ? (
+                  <span>Request Submitted</span>
                 ) : (
                   <>
-                    <span>Complete Student Registration</span>
+                    <span>Submit Registration Request</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

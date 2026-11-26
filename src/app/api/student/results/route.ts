@@ -16,7 +16,11 @@ export async function GET(request: Request) {
 
     // Single attempt detailed review
     if (attemptIdParam) {
-      const attemptId = parseInt(attemptIdParam);
+      const attemptId = Number(attemptIdParam);
+      if (!Number.isInteger(attemptId) || attemptId <= 0) {
+        return NextResponse.json({ error: "Invalid attempt ID" }, { status: 400 });
+      }
+
       const [attempt] = await db
         .select({
           id: examAttempts.id,
@@ -41,6 +45,7 @@ export async function GET(request: Request) {
           totalMarks: examinations.totalMarks,
           passingMarks: examinations.passingMarks,
           allowReview: examinations.allowReview,
+          examEndTime: examinations.endTime,
         })
         .from(examAttempts)
         .innerJoin(examinations, eq(examAttempts.examId, examinations.id))
@@ -51,9 +56,14 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
       }
 
-      // Review answers if permitted
+      const attemptCompleted = attempt.status === "submitted" || attempt.status === "evaluated";
+      const reviewWindowOpen =
+        attempt.examEndTime === null || new Date(attempt.examEndTime).getTime() <= Date.now();
+      const canReview = attempt.allowReview && attemptCompleted && reviewWindowOpen;
+
+      // Review answers only after completion, when enabled, and once the exam window is closed.
       let answersReview: unknown[] = [];
-      if (attempt.allowReview) {
+      if (canReview) {
         answersReview = await db
           .select({
             answerId: studentAnswers.id,
@@ -73,14 +83,19 @@ export async function GET(request: Request) {
           })
           .from(studentAnswers)
           .innerJoin(questions, eq(studentAnswers.questionId, questions.id))
-          .leftJoin(
+          .innerJoin(
             examQuestions,
             and(
               eq(examQuestions.examId, attempt.examId),
               eq(examQuestions.questionId, questions.id)
             )
           )
-          .where(eq(studentAnswers.attemptId, attemptId));
+          .where(
+            and(
+              eq(studentAnswers.attemptId, attemptId),
+              eq(examQuestions.examId, attempt.examId)
+            )
+          );
       }
 
       const percentage =
@@ -89,9 +104,10 @@ export async function GET(request: Request) {
           : 0;
 
       return NextResponse.json({
-        attempt,
+        attempt: { ...attempt, allowReview: canReview },
         percentage,
         answers: answersReview,
+        reviewAvailable: canReview,
       });
     }
 

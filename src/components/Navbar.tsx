@@ -2,83 +2,68 @@
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import {
-  GraduationCap,
-  ShieldCheck,
-  BookOpen,
-  User,
-  LogOut,
-  LayoutDashboard,
-  Menu,
-  X,
-  Sparkles,
-} from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, X, GraduationCap } from "lucide-react";
 import { useState } from "react";
+import { portalPath } from "@/lib/enterPortal";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const dashboardLabel =
+    user?.role === "admin" ? "Admin Panel" : user?.role === "teacher" ? "Teacher Portal" : "My Dashboard";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-      {/* Academic Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white text-xs px-4 py-1.5 font-medium">
+      <div className="bg-[#A12D33] text-white text-xs px-4 py-1.5 font-medium">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="bg-white/20 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide">
-              PROJECT ID: 2500030116
+              KL UNIVERSITY
             </span>
-            <span className="hidden sm:inline">Online Examination System</span>
-            <span className="text-blue-200 hidden md:inline">• Problem Statement #10</span>
+            <span className="hidden sm:inline">Secure Online Examination Portal</span>
           </div>
-          <div className="flex items-center gap-3 text-blue-100 text-[11px]">
-            <span>Student: <strong className="text-white">GAGIREDDY RAMREDDY</strong></span>
-            <span className="hidden sm:inline">• B.Tech CSE</span>
+          <div className="hidden sm:flex items-center gap-3 text-[#f3d6d8] text-[11px]">
+            <span>Department of Computer Science &amp; Engineering</span>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-[#A12D33] flex items-center justify-center text-white shadow-md shadow-[#A12D33]/20 group-hover:scale-105 transition-transform">
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <div className="font-bold text-slate-900 text-lg leading-tight flex items-center gap-1.5">
-                ExamSphere
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">
-                  PRO
-                </span>
+              <div className="font-bold text-slate-900 text-lg leading-tight">KL UNIVERSITY</div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                Examination Management System
               </div>
-              <div className="text-[11px] text-slate-500 font-medium">Secure Online Examination Portal</div>
             </div>
           </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
+            <Link href="/" className="hover:text-[#A12D33] transition-colors">
               Home
             </Link>
-            <Link href="/about" className="hover:text-blue-600 transition-colors">
+            <Link href="/about" className="hover:text-[#A12D33] transition-colors">
               About
             </Link>
-            <Link href="/features" className="hover:text-blue-600 transition-colors">
+            <Link href="/features" className="hover:text-[#A12D33] transition-colors">
               Features
             </Link>
           </nav>
 
-          {/* User actions */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
-                  href={user.role === "admin" ? "/admin/dashboard" : "/student/dashboard"}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-semibold transition"
+                  href={portalPath(user.role)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#A12D33]/10 text-[#A12D33] hover:bg-[#A12D33]/20 text-sm font-semibold transition"
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  {user.role === "admin" ? "Admin Panel" : "My Dashboard"}
+                  {dashboardLabel}
                 </Link>
                 <button
                   onClick={() => logout()}
@@ -92,13 +77,13 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition"
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-[#A12D33] hover:bg-slate-50 rounded-lg transition"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm hover:shadow transition"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-[#A12D33] hover:bg-[#7d1f24] rounded-lg shadow-sm hover:shadow transition"
                 >
                   Register
                 </Link>
@@ -106,7 +91,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -118,7 +102,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3">
           <Link
@@ -147,12 +130,12 @@ export default function Navbar() {
             {user ? (
               <div className="space-y-2">
                 <Link
-                  href={user.role === "admin" ? "/admin/dashboard" : "/student/dashboard"}
+                  href={portalPath(user.role)}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm justify-center"
+                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-lg bg-[#A12D33] text-white font-medium text-sm justify-center"
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  {user.role === "admin" ? "Admin Dashboard" : "Student Dashboard"}
+                  {dashboardLabel}
                 </Link>
                 <button
                   onClick={() => {
@@ -176,7 +159,7 @@ export default function Navbar() {
                 <Link
                   href="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold"
+                  className="block w-full text-center px-4 py-2 rounded-lg bg-[#A12D33] text-white text-sm font-semibold"
                 >
                   Register
                 </Link>

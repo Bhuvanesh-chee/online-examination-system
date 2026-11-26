@@ -9,6 +9,7 @@ import {
   examQuestions,
   examAttempts,
   studentAnswers,
+  teacherAllocations,
 } from "./schema";
 import { eq } from "drizzle-orm";
 
@@ -306,6 +307,16 @@ async function main() {
           .returning()
       )[0].id;
 
+  await db
+    .update(users)
+    .set({
+      approvalStatus: "approved",
+      approvedAt: new Date(),
+      isActive: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, adminId));
+
   // ---- Demonstration student: the exact requested credentials ----
   const demoEmail = "gagireddyramreddy@gmail.com";
   const demoHash = await bcrypt.hash("123456", 10);
@@ -321,6 +332,8 @@ async function main() {
       department: "B.Tech Computer Science and Engineering",
       phone: "+91 9876543210",
       isActive: true,
+      approvalStatus: "approved",
+      approvedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: users.email,
@@ -331,10 +344,54 @@ async function main() {
         studentId: "2500030116",
         department: "B.Tech Computer Science and Engineering",
         isActive: true,
+        approvalStatus: "approved",
+        approvedAt: new Date(),
         updatedAt: new Date(),
       },
     })
     .returning();
+
+  // ---- Demonstration teacher (approved) ----
+  const teacherHash = await bcrypt.hash("teacher123", 10);
+  const [demoTeacher] = await db
+    .insert(users)
+    .values({
+      name: "Dr. S. Faculty",
+      email: "teacher@kluniversity.in",
+      password: teacherHash,
+      role: "teacher",
+      studentId: "FAC-CSE-002",
+      department: "Computer Science and Engineering",
+      isActive: true,
+      approvalStatus: "approved",
+      approvedAt: new Date(),
+      approvedBy: adminId,
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: {
+        name: "Dr. S. Faculty",
+        password: teacherHash,
+        role: "teacher",
+        department: "Computer Science and Engineering",
+        isActive: true,
+        approvalStatus: "approved",
+        approvedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  await db
+    .insert(teacherAllocations)
+    .values({
+      teacherId: demoTeacher.id,
+      studentId: demoStudent.id,
+      assignedBy: adminId,
+    })
+    .onConflictDoNothing({
+      target: [teacherAllocations.teacherId, teacherAllocations.studentId],
+    });
 
   // ---- Question banks ----
   const [javaBank] = await db
@@ -487,6 +544,8 @@ async function main() {
   await db.insert(studentAnswers).values(answerRows);
 
   console.log("Portal ready:");
+  console.log(`  Admin        : admin@exam.edu / admin123`);
+  console.log(`  Demo teacher : teacher@kluniversity.in / teacher123 (allocated to demo student)`);
   console.log(`  Demo student : ${demoEmail} / 123456`);
   console.log(`  Java exam    : ${javaQuestionIds.length} MCQs, 15 marks, pass 9 (id ${javaExam.id})`);
   console.log(`  DSA exam     : ${dsaQuestionIds.length} MCQs, 15 marks, pass 9 (id ${dsaExam.id})`);

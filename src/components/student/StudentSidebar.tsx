@@ -12,11 +12,13 @@ import {
   LogOut,
   GraduationCap,
   ExternalLink,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const studentNavItems = [
   { href: "/student/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+  { href: "/student/teachers", label: "My Teachers", icon: UserCheck },
   { href: "/student/exams", label: "Available Exams", icon: BookOpen },
   { href: "/student/history", label: "Exam History", icon: History },
   { href: "/student/results", label: "Results & Scorecard", icon: Award },
@@ -43,12 +45,12 @@ export default function StudentSidebar({
       {/* Brand Header */}
       <div className="h-16 px-6 flex items-center justify-between border-b border-slate-800">
         <Link href="/student/dashboard" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md">
+          <div className="w-8 h-8 rounded-lg bg-[#A12D33] flex items-center justify-center text-white shadow-md">
             <GraduationCap className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-bold text-white text-base leading-none">ExamSphere</span>
-            <span className="text-[10px] block text-blue-400 font-semibold tracking-wider uppercase mt-0.5">
+            <span className="font-bold text-white text-base leading-none">KL UNIVERSITY</span>
+            <span className="text-[10px] block text-[#6DBFEC] font-semibold tracking-wider uppercase mt-0.5">
               Student Portal
             </span>
           </div>
@@ -79,7 +81,7 @@ export default function StudentSidebar({
               onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-[#A12D33] text-white shadow-sm"
                   : "text-slate-300 hover:bg-slate-800 hover:text-white"
               }`}
             >
@@ -93,12 +95,12 @@ export default function StudentSidebar({
       {/* Student ID Card */}
       <div className="p-4 border-t border-slate-800 bg-slate-950/60">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-sm">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#A12D33] to-[#7d1f24] flex items-center justify-center font-bold text-white text-sm">
             {user?.name?.slice(0, 2).toUpperCase() || "ST"}
           </div>
           <div className="overflow-hidden">
             <p className="text-xs font-semibold text-white truncate">{user?.name || "Student"}</p>
-            <p className="text-[11px] text-blue-300 font-mono truncate">
+            <p className="text-[11px] text-[#6DBFEC] font-mono truncate">
               ID: {user?.studentId || "2500030116"}
             </p>
           </div>

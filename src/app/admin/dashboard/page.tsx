@@ -24,6 +24,9 @@ import {
 
 interface AdminStats {
   totalStudents: number;
+  totalTeachers: number;
+  pendingStudents: number;
+  pendingTeachers: number;
   totalExams: number;
   totalQuestions: number;
   totalAttempts: number;
@@ -53,23 +56,28 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const res = await portalFetch("/api/admin/stats");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data.stats);
-        setRecent(data.recentSubmissions || []);
+    let active = true;
+    (async () => {
+      try {
+        const res = await portalFetch("/api/admin/stats");
+        if (!active) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setStats(data.stats);
+            setRecent(data.recentSubmissions || []);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load admin stats", err);
+      } finally {
+        if (active) setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to load admin stats", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -109,6 +117,37 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {(stats?.pendingStudents || stats?.pendingTeachers) ? (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-900">Pending account approvals</p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  {stats?.pendingStudents || 0} student(s) and {stats?.pendingTeachers || 0}{" "}
+                  teacher(s) are awaiting review.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/admin/students"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition"
+              >
+                Review Students <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href="/admin/teachers"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold transition"
+              >
+                Review Teachers <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Metrics Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
@@ -121,7 +160,9 @@ export default function AdminDashboardPage() {
           <div className="text-2xl sm:text-3xl font-bold text-slate-900">
             {stats?.totalStudents || 0}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Enrolled examinees</div>
+          <div className="text-[11px] text-slate-400 mt-1">
+            {stats?.totalTeachers || 0} teacher account(s)
+          </div>
         </div>
 
         <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
